@@ -72,3 +72,54 @@ h2 + .user_review {
     border-top: 1px solid black;
 }
 
+nav ul li {
+  display: inline-block;
+  padding: 20px;
+}
+
+nav {
+  display: inline-block;
+}
+
+body {
+  width: 900px;
+  margin: 0 auto;
+}
+
+section {
+  display: inline-block;
+  width: 700px;
+}
+
+aside {
+  display: inline-block;
+  width: 180px;
+  margin-right: 15px;
+  vertical-align: top;
+}
+
+aside ul li {
+  margin: 15px 0px;
+}
+
+.ingredients-list li {
+  margin: 15px 0px;
+}
+
+label {
+  display: block;
+}
+
+input[type="text"], select {
+  display: block;
+  width: 190px;
+}
+
+select {
+  margin: 15px 0px;
+  width: 180px;
+}
+
+textarea {
+  width: 350px;
+}
