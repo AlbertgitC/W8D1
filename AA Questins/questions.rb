@@ -1,5 +1,6 @@
 require 'sqlite3'
 require 'singleton'
+require 'byebug'
 
 class QuestionsDB < SQLite3::Database
   include Singleton
@@ -65,6 +66,10 @@ class User
   def authored_replies
     Reply.find_by_user_id(self.id)
   end
+
+  def followed_questions
+    QuestionFollow.followed_questions_for_user_id(self.id)
+  end
 end
 
 
@@ -121,6 +126,10 @@ class Question
   def replies
     Reply.find_by_question_id(self.id)
   end
+
+  def followers
+    QuestionFollow.followers_for_question_id(self.id)
+  end
 end
 
 
@@ -172,6 +181,42 @@ class QuestionFollow
     SQL
     return nil unless question_follow.length > 0
     QuestionFollow.new(question_follow.first) 
+  end
+
+  def self.followers_for_question_id(question_id)
+    follower = QuestionsDB.instance.execute(<<-SQL, question_id)
+      SELECT
+        users.*
+      FROM
+        users
+      JOIN
+        question_follows ON users.id = question_follows.user_id
+      WHERE
+        question_id = ?;
+    SQL
+    return nil unless follower.length > 0
+    
+    followers = []
+    follower.each { |f| followers << User.new(f) }
+    followers
+  end
+
+  def self.followed_questions_for_user_id(user_id)
+    q_followed = QuestionsDB.instance.execute(<<-SQL, user_id)
+      SELECT
+        questions.*
+      FROM
+        questions
+      JOIN
+        question_follows ON questions.id = question_follows.question_id
+      WHERE
+        user_id = ?;
+    SQL
+    return nil unless q_followed.length > 0
+    
+    questions = []
+    q_followed.each { |q| questions << Question.new(q) }
+    questions
   end
 
   def initialize(options)
