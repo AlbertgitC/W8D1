@@ -112,6 +112,10 @@ class Question
     questions 
   end
 
+  def self.most_followed(n)
+    QuestionFollow.most_followed_questions(n)
+  end
+
   def initialize(options)
     @id = options['id']
     @title = options['title']
@@ -152,6 +156,56 @@ class QuestionLikes
     SQL
     return nil unless questionlikes.length > 0
     QuestionLikes.new(questionlikes.first) 
+  end
+
+  def self.likers_for_question_id(question_id)
+    liker = QuestionsDB.instance.execute(<<-SQL, question_id)
+      SELECT
+        users.*
+      FROM
+        users
+      JOIN
+        question_likes ON users.id = question_likes.liked_user
+      WHERE
+        question_likes.liked_q = ?;
+    SQL
+    return nil unless liker.length > 0
+
+    likers = []
+    liker.each { |user| likers << User.new(user) }
+    likers
+  end
+
+  def self.num_likes_for_question_id(question_id)
+    num_likes = QuestionsDB.instance.execute(<<-SQL, question_id)
+      SELECT
+        COUNT(liked_user)
+      FROM
+        question_likes
+      WHERE
+        liked_q = ?;
+    SQL
+    return nil if Question.find_by_id(question_id).nil? || num_likes.empty?
+
+    num_likes.first['COUNT(liked_user)']
+  end
+
+  def self.liked_questions_for_user_id(user_id)
+    liked_q = QuestionsDB.instance.execute(<<-SQL, user_id)
+      SELECT
+        questions.*
+      FROM
+        questions
+      JOIN
+        question_likes ON questions.id = question_likes.liked_q
+      WHERE
+        liked_user = ?;
+    SQL
+    return nil if liked_q.empty?
+
+    liked_qs = []
+    liked_q.each { |q| liked_qs << Question.new(q) }
+    liked_qs
   end
 
   def initialize(options)
@@ -217,6 +271,24 @@ class QuestionFollow
     questions = []
     q_followed.each { |q| questions << Question.new(q) }
     questions
+  end
+
+  def self.most_followed_questions(n)
+    most_followed = QuestionsDB.instance.execute(<<-SQL)
+      SELECT
+        COUNT(user_id), questions.*
+      FROM
+        question_follows
+      JOIN
+        questions ON questions.id = question_follows.question_id 
+      GROUP BY
+        question_id
+      ORDER BY
+        COUNT(user_id) DESC;
+    SQL
+    return nil if most_followed.length <= 0 || most_followed.length < n
+    
+    Question.new(most_followed[n - 1])
   end
 
   def initialize(options)
